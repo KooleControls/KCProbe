@@ -1,21 +1,44 @@
-# React + TypeScript + Vite + shadcn/ui
+# KCProbe
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+Internal browser-based diagnostic tool for the Koole Controls embedded devices
+team. Used by technical staff to test and troubleshoot embedded devices by
+sending commands and inspecting responses.
 
-## Adding components
+Devices speak a proprietary TCP protocol. Since browsers can't open raw TCP
+sockets, KCProbe is split into two layers:
 
-To add components to your app, run the following command:
+```
+GitHub Pages (this web app)              ← UI + all logic
+        ↕  chrome.runtime.sendMessage
+Chrome Extension (TCP socket manager)    ← transport only
+        ↕  raw TCP (proprietary protocol)
+Embedded Device
+```
+
+> The Chrome extension does not exist in this repo yet — this is currently the
+> web-app scaffold only. See [CLAUDE.md](CLAUDE.md) for the full architecture
+> and roadmap.
+
+## Stack
+
+React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui · pnpm
+
+## Development
 
 ```bash
-npx shadcn@latest add button
+pnpm install
+pnpm dev         # start the dev server
+pnpm build       # type-check and build for production
+pnpm typecheck   # tsc --noEmit
+pnpm lint        # eslint
+pnpm format      # prettier
 ```
 
-This will place the ui components in the `src/components` directory.
+Add shadcn/ui components with:
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
+```bash
+pnpm dlx shadcn@latest add <component>
 ```
+
+They are placed in `src/components/ui` and imported via the `@/` alias, e.g.
+`import { Button } from "@/components/ui/button"`.
