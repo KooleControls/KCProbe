@@ -7,6 +7,15 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      prettier:
+        specifier: ^3.8.3
+        version: 3.8.3
+      prettier-plugin-tailwindcss:
+        specifier: ^0.8.0
+        version: 0.8.0(prettier@3.8.3)
+
+  app:
     dependencies:
       '@fontsource-variable/inter':
         specifier: ^5.2.8
@@ -87,6 +96,8 @@ importers:
       vite:
         specifier: ^8
         version: 8.0.14(@types/node@24.12.4)(jiti@2.7.0)
+
+  extension: {}
 
 packages:
 

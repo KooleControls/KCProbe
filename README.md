@@ -15,9 +15,16 @@ Chrome Extension (TCP socket manager)    ← transport only
 Embedded Device
 ```
 
-> The Chrome extension does not exist in this repo yet — this is currently the
-> web-app scaffold only. See [CLAUDE.md](CLAUDE.md) for the full architecture
-> and roadmap.
+See [CLAUDE.md](CLAUDE.md) for the full architecture and roadmap.
+
+## Structure
+
+A pnpm monorepo with two packages:
+
+- **[app/](app/)** — the React + Vite web app (`@kcprobe/app`), deployed to GitHub Pages.
+- **[extension/](extension/)** — the Chrome MV3 extension (`@kcprobe/extension`),
+  the TCP transport layer. No build step; load it unpacked. See
+  [extension/README.md](extension/README.md).
 
 ## Stack
 
@@ -25,20 +32,22 @@ React 19 · TypeScript · Vite · Tailwind CSS v4 · shadcn/ui · pnpm
 
 ## Development
 
+Run from the repo root:
+
 ```bash
 pnpm install
-pnpm dev         # start the dev server
-pnpm build       # type-check and build for production
-pnpm typecheck   # tsc --noEmit
-pnpm lint        # eslint
-pnpm format      # prettier
+pnpm dev         # start the app dev server (@kcprobe/app)
+pnpm build       # build all packages
+pnpm typecheck   # tsc --noEmit across packages
+pnpm lint        # eslint across packages
+pnpm format      # prettier across the repo
 ```
 
-Add shadcn/ui components with:
+Add shadcn/ui components from inside `app/`:
 
 ```bash
-pnpm dlx shadcn@latest add <component>
+cd app && pnpm dlx shadcn@latest add <component>
 ```
 
-They are placed in `src/components/ui` and imported via the `@/` alias, e.g.
+They are placed in `app/src/components/ui` and imported via the `@/` alias, e.g.
 `import { Button } from "@/components/ui/button"`.

@@ -1,0 +1,7 @@
+{
+  "name": "@kcprobe/extension",
+  "private": true,
+  "version": "0.0.1",
+  "description": "KCProbe Chrome extension (MV3) — TCP transport layer for the KCProbe web app.",
+  "type": "module"
+}

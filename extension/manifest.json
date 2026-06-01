@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "KCProbe TCP Driver",
+  "version": "0.0.1",
+  "description": "Transport layer for KCProbe: relays commands from the KCProbe web app to embedded devices over TCP.",
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "externally_connectable": {
+    "matches": ["https://koolecontrols.github.io/*", "http://localhost/*"]
+  }
+}

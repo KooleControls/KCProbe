@@ -23,60 +23,93 @@ Embedded Device
 - **Web app** — React + Vite + shadcn/ui, fully static, hosted on GitHub Pages,
   zero install. Detects whether the extension is installed and current; shows an
   install banner if missing, an update prompt if outdated, otherwise connects.
-- **Chrome extension (Manifest V3)** — owns all TCP connections via
-  `chrome.sockets.tcp` and exposes a generic messaging API. Distributed via
-  GitHub Releases (unpacked or `.crx`), **not** the Chrome Web Store. Versioned;
-  the web app checks the version on load.
+- **Chrome extension (Manifest V3)** — owns all TCP connections and exposes a
+  generic messaging API. Distributed via GitHub Releases (unpacked or `.crx`),
+  **not** the Chrome Web Store. Versioned; the web app checks the version on load.
 
-## Current state of the repo
+  ⚠️ The classic `chrome.sockets.tcp` API is a Chrome **Apps** API and is **not**
+  available to MV3 extensions. The actual raw-TCP mechanism (Direct Sockets API
+  in an Isolated Web App, a native-messaging host, etc.) is an **open decision** —
+  the extension currently only implements the presence/version handshake.
 
-⚠️ **The repo today is only the web-app scaffold.** A fresh
-Vite + React + shadcn/ui template lives at the repo **root** — the
-`app/` + `extension/` split described below does not exist yet, and there is no
-extension, TCP code, or device logic. `src/App.tsx` is still the starter page.
+## Repo structure
 
-Treat the sections below as the intended design, not the existing structure.
+A **pnpm monorepo** with two packages:
+
+```
+kcprobe/
+├── app/            # @kcprobe/app — React + Vite web app → GitHub Pages
+│   ├── src/        #   App.tsx, components/ (incl. ui/ from shadcn), lib/
+│   ├── index.html
+│   └── vite.config.ts, tsconfig*.json, components.json, eslint.config.js
+├── extension/      # @kcprobe/extension — Chrome MV3 TCP driver (no build step)
+│   ├── manifest.json
+│   └── src/background.js   # service worker; generic message API
+├── package.json    # root: workspace orchestration scripts + shared prettier
+├── pnpm-workspace.yaml
+└── .prettierrc     # shared formatting config (repo-wide)
+```
+
+There is **no shared package** for the message contract yet; the app and
+extension each define the message types until duplication justifies extracting a
+`packages/protocol`.
+
+## Current state
+
+Phase 1 is **not built yet**. The web app is a near-empty shell
+([app/src/App.tsx](app/src/App.tsx) is just a header) and the extension only
+answers the presence/version ping (`KCPROBE_PING` → `KCPROBE_PONG`). No TCP
+connect/send/disconnect, no device logic, no extension-detection UI yet.
 
 ## Tech stack (as actually installed)
 
-| Concern | Choice |
-|---|---|
-| Package manager | **pnpm** (workspace configured, `packages: []`) |
-| Framework | **React 19** |
-| Language | **TypeScript ~6** |
-| Build tool | **Vite 8** |
-| Styling | **Tailwind CSS v4** via `@tailwindcss/vite` (no `tailwind.config`; theme in `src/index.css`) |
-| Components | **shadcn/ui** (style `radix-mira`, base color `neutral`), on `radix-ui` |
-| Icons | **lucide-react** |
-| Lint / format | ESLint 10 (flat config) + Prettier 3 (with `prettier-plugin-tailwindcss`) |
+| Concern         | Choice                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| Package manager | **pnpm** workspace (`app`, `extension`)                                                      |
+| Framework       | **React 19**                                                                                 |
+| Language        | **TypeScript ~6**                                                                            |
+| Build tool      | **Vite 8**                                                                                   |
+| Styling         | **Tailwind CSS v4** via `@tailwindcss/vite` (no `tailwind.config`; theme in `src/index.css`) |
+| Components      | **shadcn/ui** (style `radix-mira`, base color `neutral`), on `radix-ui`                      |
+| Icons           | **lucide-react**                                                                             |
+| Lint / format   | ESLint 10 (flat config) + Prettier 3 (with `prettier-plugin-tailwindcss`)                    |
 
 ## Commands
 
+Run from the repo **root** (scripts fan out across packages with `pnpm -r`):
+
 ```bash
-pnpm dev         # start Vite dev server
-pnpm build       # tsc -b && vite build
-pnpm typecheck   # tsc --noEmit
-pnpm lint        # eslint .
-pnpm format      # prettier --write "**/*.{ts,tsx}"
-pnpm preview     # preview the production build
+pnpm install     # install all workspace deps
+pnpm dev         # start the app's Vite dev server (@kcprobe/app)
+pnpm build       # build every package that has a build script
+pnpm typecheck   # tsc --noEmit across packages
+pnpm lint        # eslint across packages
+pnpm format      # prettier across the whole repo
 ```
 
-Use **pnpm**, not npm/yarn.
+Target one package directly with a filter, e.g.
+`pnpm --filter @kcprobe/app dev`. Use **pnpm**, not npm/yarn.
+
+The **extension has no build step** — load `extension/` unpacked via
+`chrome://extensions` (Developer mode → Load unpacked). See
+[extension/README.md](extension/README.md).
 
 ## Conventions
 
-- **Import alias:** `@/` → `src/` (configured in `vite.config.ts` and tsconfig).
-  Use `@/components/ui/...`, `@/lib/utils`, `@/hooks`, etc.
-- **Add shadcn components** with `pnpm dlx shadcn@latest add <name>` — they land
-  in `src/components/ui`. Prefer shadcn/ui components over custom CSS.
+- **Import alias (app only):** `@/` → `app/src/` (configured in
+  `app/vite.config.ts` and tsconfig). Use `@/components/ui/...`, `@/lib/utils`,
+  `@/hooks`, etc.
+- **Add shadcn components** by running `pnpm dlx shadcn@latest add <name>` **from
+  inside `app/`** — they land in `app/src/components/ui`. Prefer shadcn/ui
+  components over custom CSS.
 - **Styling** is Tailwind v4 utility classes; merge with `cn()` from
-  `@/lib/utils`. Theme tokens live in `src/index.css` (CSS variables).
-- Match the existing formatting; run `pnpm format` and `pnpm lint` before
-  finishing.
+  `@/lib/utils`. Theme tokens live in `app/src/index.css` (CSS variables).
+- Prettier config is shared at the repo root (`.prettierrc`); run `pnpm format`
+  and `pnpm lint` before finishing.
 
 ## Architecture principles (carry these into new code)
 
-- **Keep the extension minimal** — it is a *transport layer*, not a business
+- **Keep the extension minimal** — it is a _transport layer_, not a business
   logic layer. All UI and command logic lives in the web app.
 - **Design the extension messaging API to be generic.** It must support future
   device-specific components **without requiring extension changes**.
@@ -88,19 +121,7 @@ Use **pnpm**, not npm/yarn.
 
 - **Phase 1:** connect to a device by host + port over TCP, send raw commands,
   display responses, extension presence/version check with install/update prompts.
-- **Phase 2:** *device-specific components* — pluggable UI panels for a given
+- **Phase 2:** _device-specific components_ — pluggable UI panels for a given
   device type that automate multi-command workflows (e.g. a "Retrieve Logs"
   button firing several underlying commands in sequence). Design these as
   modular/pluggable from the start.
-
-## Intended structure (once the split lands)
-
-```
-kcprobe/
-├── app/          # React + Vite web app (deployed to GitHub Pages)
-└── extension/    # Chrome extension (TCP driver)
-```
-
-A pnpm workspace is already initialized to accommodate this. When introducing
-the split, move the current root scaffold into `app/` and add `app/` (and
-`extension/` if it becomes a package) to `pnpm-workspace.yaml`.
